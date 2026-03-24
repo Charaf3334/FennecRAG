@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Space_Grotesk, Pacifico } from "next/font/google"
 import "./globals.css"
+import { Toaster } from 'sonner'
 
 const spaceGrotesk = Space_Grotesk({
 	subsets: ["latin"],
@@ -31,6 +32,17 @@ export default function RootLayout({
 	<html lang="en">
 	  <body className={`${spaceGrotesk.variable} ${pacifico.variable} antialiased`}>
 		{children}
+        <Toaster 
+            theme="light"
+            position="top-right"
+            richColors
+            duration={3000}
+            expand
+            visibleToasts={3}
+            style={{
+                fontFamily: 'var(--font-space)'
+            }}
+        />
 	  </body>
 	</html>
   )
