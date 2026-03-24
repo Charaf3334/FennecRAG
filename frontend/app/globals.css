@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-space {
+    font-family: var(--font-space-grotesk);
+  }
+
+  .font-pacifico {
+    font-family: var(--font-pacifico);
+  }
+}
