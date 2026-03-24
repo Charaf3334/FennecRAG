@@ -94,7 +94,6 @@ const page = () => {
             toast.error("Error: You need to provide atleast one file in order to let Fennec process it.")
             return
         }
-        
         const userMessage: Message = {
             id: messageId,
             text: inputValue,
@@ -106,7 +105,8 @@ const page = () => {
         setInputValue('')
         setUploadedFiles([])
         setMessageId(prev => prev + 1)
-        
+
+        // i need to delete these and call the real backend who will provide me response
         setTimeout(() => {
             const fennecMessage: Message = {
                 id: messageId + 1,
