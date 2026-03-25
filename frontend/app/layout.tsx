@@ -1,7 +1,10 @@
 import type { Metadata } from "next"
-import { Space_Grotesk, Pacifico } from "next/font/google"
+import { Space_Grotesk, Pacifico, Geist } from "next/font/google"
 import "./globals.css"
 import { Toaster } from 'sonner'
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const spaceGrotesk = Space_Grotesk({
 	subsets: ["latin"],
@@ -29,21 +32,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-	<html lang="en">
-	  <body className={`${spaceGrotesk.variable} ${pacifico.variable} antialiased`}>
-		{children}
-        <Toaster 
-            theme="light"
-            position="top-right"
-            richColors
-            duration={3000}
-            expand
-            visibleToasts={3}
-            style={{
-                fontFamily: 'var(--font-space)'
-            }}
-        />
-	  </body>
-	</html>
-  )
+    <html lang="en" className={cn("font-sans", geist.variable)}>
+        <body className={`${spaceGrotesk.variable} ${pacifico.variable} antialiased`}>
+            {children}
+            <Toaster 
+                theme="light" position="top-right" richColors duration={3000} expand visibleToasts={3}
+                style={{
+                    fontFamily: 'var(--font-space)'
+                }}/>
+        </body>
+    </html>
+    )
 }
