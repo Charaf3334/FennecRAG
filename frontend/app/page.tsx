@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react'
 import Tooltip from "@/components/Tooltip"
 import { toast } from 'sonner'
 import { NumberTicker } from "@/components/NumberTicker"
+import ReactMarkdown from 'react-markdown'
 
 const miniTitles = ["Ask anything about your documents", "Get instant answers", "Explore your data", "Summarize your PDFs", "Easy retrieve the information"]
 const allowedExtensions = ['pdf', 'docx', 'md', 'txt', 'csv']
@@ -26,6 +27,25 @@ interface Message
     files?: UploadedFile[]
 }
 
+const AnimatedMessage = ({text} : {text: string}) => {
+    const [displayed, setDisplayed] = useState<string>('')
+    useEffect(() => {
+        setDisplayed('')
+        let i = 0
+        const interval = setInterval(() => {
+            if (i < text.length)
+            {
+                setDisplayed(text.slice(0, i + 1))
+                i++
+            }
+            else
+                clearInterval(interval)
+        }, 15)
+        return () => clearInterval(interval)
+    }, [text])
+    return <ReactMarkdown>{displayed}</ReactMarkdown>
+}
+
 const page = () => {
     const [textIndex, setTextIndex] = useState<number>(0)
     const [hoverGithub, setHoverGithub] = useState<boolean>(false)
@@ -40,12 +60,15 @@ const page = () => {
     const [starCount, setStarCount] = useState<number>(0)
     const [firstLoad, setFirstLoad] = useState<boolean>(true)
     const [loadingFennecMessage, setLoadingFennecMessage] = useState<boolean>(false)
+    const [inConversation, setInConversation] = useState<boolean>(false)
+    const [loadingUpload, setIsLoadingUpload] = useState<boolean>(false)
 
     useEffect(() => {
         const interval = setInterval(() => {
             setTextIndex((prev) => (prev + 1) % miniTitles.length)
         }, 2000)
         getStarCountFromRepo()
+        deleteHistory()
         return () => clearInterval(interval)
     }, [])
 
@@ -62,6 +85,17 @@ const page = () => {
         if (pos === -1 || pos === 0)
             return ''
         return filename.slice(pos + 1)
+    }
+
+    const deleteHistory = async () => {
+        try
+        {
+            await fetch('http://localhost:8000/history', {method: 'DELETE'})
+        }
+        catch (error)
+        {
+            toast.error("Error: an error happened while trying to call the server.")
+        }
     }
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,49 +120,100 @@ const page = () => {
     }
 
     const removeFile = (id: number) => {
-        setUploadedFiles(prev => prev.filter(f => f.id !== id))
+        setUploadedFiles(prev => prev.filter(file => file.id !== id))
     }
 
-    const handleSendMessage = () => {
-        if (inputValue.trim() === '')
+    const handleSendMessage = async () => {
+        if (!inConversation)
         {
-            toast.error('Error: No message is being provided')
-            return
+            if (inputValue.trim() === '')
+            {
+                toast.error('Error: No message is being provided')
+                return
+            }
+            if (uploadedFiles.length === 0)
+            {
+                toast.error("Error: You need to provide atleast one file in order to let Fennec process it.")
+                return
+            }
         }
-        if (uploadedFiles.length === 0)
+        else
         {
-            toast.error("Error: You need to provide atleast one file in order to let Fennec process it.")
-            return
+            if (inputValue.trim() === '')
+            {
+                toast.error('Error: No message is being provided')
+                return
+            }
+        }
+        if (!inConversation)
+        {
+            setIsLoadingUpload(true)
+            const multiformData = new FormData()
+            uploadedFiles.forEach(({file}) => {
+                multiformData.append('files', file)
+            })
+            try
+            {
+                const response = await fetch('http://localhost:8000/upload', {
+                    method: 'POST',
+                    body: multiformData
+                })
+                if (!response.ok)
+                {
+                    toast.error("Error: an error happened while trying to call the server.")
+                    await handleNewChat()
+                    return
+                }
+                setIsLoadingUpload(false)
+            }
+            catch (error)
+            {
+                toast.error("Error: an error happened while trying to call the server.")
+                await handleNewChat()
+                return
+            }
         }
         const userMessage: Message = {
             id: messageId,
             text: inputValue,
             sender: 'user',
             timestamp: new Date(),
-            files: uploadedFiles
+            files: !inConversation ? uploadedFiles : []
         }
         setMessages(prev => [...prev, userMessage])
         setInputValue('')
         setUploadedFiles([])
         setMessageId(prev => prev + 1)
-
-        // i need to delete these and call the real backend who will provide me response
         setLoadingFennecMessage(true)
-        setTimeout(() => {
+        setInConversation(true)
+        try
+        {
+            const response = await fetch('http://localhost:8000/askFennec', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: inputValue})
+            })
+            const data = await response.json()
             const fennecMessage: Message = {
                 id: messageId + 1,
-                text: "This is a placeholder response from Fennec. I'm analyzing your documents and will provide insights soon!",
+                text: data.response,
                 sender: 'fennec',
                 timestamp: new Date()
             }
             setMessages(prev => [...prev, fennecMessage])
             setMessageId(prev => prev + 2)
             setLoadingFennecMessage(false)
-        }, 1000)
+        }
+        catch (error)
+        {
+            toast.error("Error: an error happened while trying to call the server.")
+            handleNewChat()
+        }
     }
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && !loadingFennecMessage && !loadingUpload)
+        {
             e.preventDefault()
             handleSendMessage()
         }
@@ -143,9 +228,11 @@ const page = () => {
         return Math.round((bytes / Math.pow(kb, i)) * 100) / 100 + ' ' + sizes[i]
     }
 
-    const handleNewChat = () => {
+    const handleNewChat = async () => {
         setMessages([])
         setUploadedFiles([])
+        setInConversation(false)
+        await deleteHistory()
     }
 
     const getStarCountFromRepo = async () => {
@@ -161,8 +248,6 @@ const page = () => {
             setStarCount(0)
         }
     }
-
-    // khsni tari9a bach f message 2 nsift gha text bla files, bc files are already sent in the first sending
 
     return (
         <div className="flex flex-col min-h-screen font-space">
@@ -182,7 +267,7 @@ const page = () => {
                             <Link href={'https://github.com/Charaf3334/FennecRAG'} target="_blank" className="flex items-center justify-center gap-1 md:gap-2 p-1 md:p-2 rounded-2xl border border-gray-200 shadow-2xs">
                                 <BiLogoGithub size={18} className='md:w-6 md:h-6'/>
                                 <div className={`${!hoverGithub ? 'bg-gray-200' : 'bg-black text-white'} rounded-2xl px-1 md:px-2 font-bold transition-colors duration-200 ease-in-out text-xs md:text-sm`}>
-                                    <NumberTicker value={starCount} delay={0.2} className=""/>
+                                    <NumberTicker value={starCount} delay={0.2}/>
                                 </div>
                             </Link>
                         </div>
@@ -210,14 +295,14 @@ const page = () => {
                                 </div>
                             </>
                         )}
-                        <div className={`w-full max-w-2xl ${messages.length > 0 ? 'h-96' : 'h-auto'} bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl shadow-md flex flex-col transition-all duration-300`}>
+                        <div className={`w-full max-w-2xl ${messages.length > 0 ? 'h-180' : 'h-auto'} bg-white border-2 border-gray-200 rounded-xl md:rounded-2xl shadow-md flex flex-col transition-all duration-300`}>
                             {messages.length > 0 && (
                                 <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4">
                                     {messages.map((message) => (
                                         <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`flex flex-col gap-2 max-w-xs md:max-w-xl`}>
                                                 <div className={`px-3 md:px-4 py-2 rounded-lg wrap-break-word text-sm ${message.sender === 'user' ? 'bg-blue-500 text-white rounded-br-none' : 'bg-gray-200 text-gray-900 rounded-bl-none'}`}>
-                                                    <p className="text-xs md:text-sm">{message.text}</p>
+                                                    {message.sender === 'fennec' ? <AnimatedMessage text={message.text}/> : <ReactMarkdown>{message.text}</ReactMarkdown>} 
                                                     <span className={`text-xs mt-1 block ${message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
                                                         {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}
                                                     </span>
@@ -285,19 +370,19 @@ const page = () => {
                                     </div>
                                 )}
                                 <div className="relative">
-                                    <input type="text" placeholder="Ask Fennec..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyPress={handleKeyPress} className="w-full border-2 border-gray-200 shadow-2xs pl-10 md:pl-13 pr-10 md:pr-13 py-2 rounded-2xl outline-none focus:border-gray-400 transition-all duration-300 ease-in-out text-sm md:text-base" />
+                                    <input type="text" placeholder="Ask Fennec..." value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyPress={handleKeyPress} className={`w-full border-2 border-gray-200 shadow-2xs ${!inConversation ? 'pl-10 md:pl-13' : 'pl-3 md:pl-4'} pr-10 md:pr-13 py-2 rounded-2xl outline-none focus:border-gray-400 transition-all duration-300 ease-in-out text-sm md:text-base`}/>
                                     <Tooltip content="Send" side="top">
-                                        <div 
-                                            onClick={handleSendMessage}
-                                            className="w-6 h-6 md:w-8 md:h-8 cursor-pointer hover:bg-gray-400/80 bg-gray-400 flex items-center justify-center rounded-full absolute right-2 md:right-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ease-in-out">
-                                            <BiSend size={18} className="text-white md:w-6 md:h-6"/>
-                                        </div>
+                                        <button disabled={loadingFennecMessage || loadingUpload} onClick={handleSendMessage} className={`w-6 h-6 md:w-8 md:h-8 ${loadingFennecMessage || loadingUpload ? 'cursor-not-allowed' : 'cursor-pointer'} hover:bg-gray-400/80 bg-gray-400 flex items-center justify-center rounded-full absolute right-2 md:right-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ease-in-out`}>
+                                            {loadingFennecMessage || loadingUpload ? <BiLoaderCircle size={18} className="animate-spin text-gray-500"/> : <BiSend size={18} className="text-white md:w-6 md:h-6"/>}
+                                        </button>
                                     </Tooltip>
-                                    <Tooltip content="Upload a file" side="top">
-                                        <div onClick={handleUploadClick} className="w-6 h-6 md:w-8 md:h-8 cursor-pointer hover:bg-gray-400/80 bg-gray-400 flex items-center justify-center rounded-full absolute left-2 md:left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ease-in-out">
-                                            <BiUpload size={18} className="text-white md:w-6 md:h-6"/>
-                                        </div>
-                                    </Tooltip>
+                                    {!inConversation && (
+                                        <Tooltip content="Upload a file" side="top">
+                                            <button disabled={loadingFennecMessage || loadingUpload} onClick={handleUploadClick} className={`w-6 h-6 md:w-8 md:h-8 ${loadingFennecMessage || loadingUpload ? 'cursor-not-allowed' : 'cursor-pointer'} hover:bg-gray-400/80 bg-gray-400 flex items-center justify-center rounded-full absolute left-2 md:left-3 top-1/2 -translate-y-1/2 transition-colors duration-200 ease-in-out`}>
+                                                <BiUpload size={18} className="text-white md:w-6 md:h-6"/>
+                                            </button>
+                                        </Tooltip>
+                                    )}
                                 </div>
                                 {messages.length > 0 && (
                                     <div className="flex items-center justify-center mt-2 md:mt-2">
