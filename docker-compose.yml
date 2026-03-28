@@ -1,0 +1,30 @@
+version: '3.9'
+
+networks:
+  fennec_network:
+    driver: bridge
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: fennec_frontend
+    networks:
+      - fennec_network
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/frontend
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    container_name: fennec_backend
+    networks:
+      - fennec_network
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/backend

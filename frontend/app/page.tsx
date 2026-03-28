@@ -241,12 +241,12 @@ const page = () => {
             const response = await fetch('https://api.github.com/repos/Charaf3334/Torrent-API') // i will need change this to /FennecRAG when the repo is public
             const data = await response.json()
             setStarCount(data['stargazers_count'])
-            setFirstLoad(false)
         }
         catch (error)
         {
             setStarCount(0)
         }
+	setFirstLoad(false)
     }
 
     return (
