@@ -1,5 +1,5 @@
 # FennecRAG
-Local AI-powered RAG designed to understand your data effortlessly.
+Local AI-powered RAG designed to understand your documents effortlessly.
 
 # Installation
 
