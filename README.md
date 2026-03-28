@@ -53,4 +53,4 @@ http://localhost:3000
 That's it, start asking questions about your documents with Fennec!
 
 # Note
-Fennec may sometimes make mistakes due to hardware limitations that prevent the use of stronger models for both the LLM and embeddings.
+While developing and coding Fennec, I encountered limitations due to hardware constraints, which sometimes prevented using stronger models for both the LLM and embeddings.
