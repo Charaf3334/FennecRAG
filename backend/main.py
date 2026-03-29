@@ -52,6 +52,7 @@ def askFennec(msg: dict):
         return JSONResponse(content={"error": "No document uploaded yet. Call /upload first."}, status_code=503)
     try:
         question = msg['text']
+        print(f'question is: {question}')
         response = Fennec(question, rag_chain, chat_history)
         chat_history.append(HumanMessage(content=question))
         chat_history.append(AIMessage(content=response))
