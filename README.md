@@ -3,10 +3,10 @@ Local AI-powered RAG designed to understand your documents effortlessly.
 
 # Preview
 
-![screenshot](./preview/home.png)
-![screenshot](./preview/qst.png)
-![screenshot](./preview/thinking.png)
-![screenshot](./preview/answer.png)
+![screenshot](./preview/home.PNG)
+![screenshot](./preview/qst.PNG)
+![screenshot](./preview/thinking.PNG)
+![screenshot](./preview/answer.PNG)
 
 # Installation
 
