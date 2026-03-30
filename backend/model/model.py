@@ -27,7 +27,7 @@ def build_chain():
     for loader in loaders:
         docs.extend(loader.load())
     if not docs:
-        raise FileNotFoundError(f"No PDF files found in '{DATA_DIR}'.")
+        raise FileNotFoundError(f"No files found in '{DATA_DIR}'.")
     chunks = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=80).split_documents(docs)
     vector_db = Chroma.from_documents(documents=chunks, embedding=embeddings)
     retriever = vector_db.as_retriever(search_kwargs={"k": 4})
