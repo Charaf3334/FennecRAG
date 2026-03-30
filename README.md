@@ -1,6 +1,13 @@
 # FennecRAG
 Local AI-powered RAG designed to understand your documents effortlessly.
 
+# Preview
+
+![screenshot](./preview/home.png)
+![screenshot](./preview/qst.png)
+![screenshot](./preview/thinking.png)
+![screenshot](./preview/answer.png)
+
 # Installation
 
 ### 1. Install Ollama
