@@ -20,7 +20,7 @@ const pacifico = Pacifico({
 
 export const metadata: Metadata = {
 	title: "FennecRAG",
-	description: "Upload PDF's, Markdowns or any txt files and grep informations from them",
+	description: "Upload PDFs, Markdown, or text files and instantly extract the information you need.",
 	icons: {
 		icon: "/favicon.png"
   	}

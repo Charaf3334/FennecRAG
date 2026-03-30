@@ -90,7 +90,7 @@ const page = () => {
     const deleteHistory = async () => {
         try
         {
-            await fetch('http://localhost:8000/history', {method: 'DELETE'})
+            await fetch('http://backend:8000/history', {method: 'DELETE'})
         }
         catch (error)
         {
@@ -154,7 +154,7 @@ const page = () => {
             })
             try
             {
-                const response = await fetch('http://localhost:8000/upload', {
+                const response = await fetch('http://backend:8000/upload', {
                     method: 'POST',
                     body: multiformData
                 })
@@ -188,7 +188,7 @@ const page = () => {
         setInConversation(true)
         try
         {
-            const response = await fetch('http://localhost:8000/askFennec', {
+            const response = await fetch('http://backend:8000/askFennec', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({text: inputValue})
@@ -238,7 +238,7 @@ const page = () => {
     const getStarCountFromRepo = async () => {
         try
         {
-            const response = await fetch('https://api.github.com/repos/Charaf3334/Torrent-API') // i will need change this to /FennecRAG when the repo is public
+            const response = await fetch('https://api.github.com/repos/Charaf3334/FennecRAG')
             const data = await response.json()
             setStarCount(data['stargazers_count'])
         }
@@ -246,7 +246,7 @@ const page = () => {
         {
             setStarCount(0)
         }
-	setFirstLoad(false)
+	    setFirstLoad(false)
     }
 
     return (
